@@ -2,7 +2,7 @@
 
 A lab tool to measure power consumption from one or more smart plugs on the LAN
 (TP-Link Tapo P110 and Shelly plugs today; other plugs or PDUs are one module away). The local
-companion to [REM](https://github.com/nebul2/REM) (Remote Energy Measurement).
+companion to [REM](https://github.com/Greening-of-Streaming/rem) (Remote Energy Measurement).
 Successor to [tapo_measure_tool](https://github.com/Quanteec/tapo_measure_tool)
 and `dual_measure_tool` — no web server, one command (or one double-click).
 
@@ -20,7 +20,7 @@ and `dual_measure_tool` — no web server, one command (or one double-click).
 ## Download (prebuilt apps)
 
 Non-technical testers: grab the latest signed-later build from
-**[Releases](https://github.com/nebul2/LEM/releases)** — `LEM-macos.zip`
+**[Releases](https://github.com/Greening-of-Streaming/LEM/releases)** — `LEM-macos.zip`
 (macOS) or `LEM-windows.zip` (Windows). No Python needed. (Unsigned for now,
 so macOS/Windows will warn on first launch — right-click → Open / "Run anyway".)
 
@@ -112,7 +112,7 @@ enabled once the Greening of Streaming Apple Developer account is active.
 
 ## Sending data to REM
 
-LEM can stream measurements into a [REM](https://github.com/nebul2/REM)
+LEM can stream measurements into a [REM](https://github.com/Greening-of-Streaming/rem)
 experiment while they run — the local companion to REM's cloud collector.
 Identity is the plug's **Tapo nickname**, exactly what REM's collector uses, so
 local and cloud data for the same plug merge automatically.
