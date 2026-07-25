@@ -18,6 +18,13 @@ ip   = "192.168.1.41"
 type = "tapo"
 ip   = "192.168.1.42"
 
+# Shelly plug (Gen1/2/3) — no Tapo credentials needed. Its identity in REM is
+# its own device name (falls back to the Shelly id). Add one block per plug.
+[plugs.immersion]
+type        = "shelly"
+ip          = "192.168.1.32"
+device_name = "Shellypro1pm-a0dd6c9eca04"
+
 # Synthetic device for dry runs — no hardware needed.
 [plugs.fake1]
 type = "fake"

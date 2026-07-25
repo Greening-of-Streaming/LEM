@@ -27,6 +27,7 @@ so macOS/Windows will warn on first launch — right-click → Open / "Run anywa
 ## Install (CLI)
 
 ```sh
+git clone https://github.com/Greening-of-Streaming/LEM.git && cd LEM
 python3 -m venv venv && source venv/bin/activate
 pip install -e .            # add '.[gui]' for the desktop app, '.[dev]' for pytest
 cp config.example.toml config.toml   # or let 'lem --scan' create it
@@ -91,6 +92,7 @@ overrides, the fake device's `fail_rate`, or (one day) a PDU's outlet number.
 The same core with a point-and-click face, for testers who don't use terminals:
 
 ```sh
+python3 -m venv venv && source venv/bin/activate   # if not already active
 pip install -e '.[gui]'
 lem-gui
 ```

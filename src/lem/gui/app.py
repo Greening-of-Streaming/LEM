@@ -5,6 +5,7 @@ window and exit immediately (used by packaging smoke tests).
 """
 
 import os
+import subprocess
 import sys
 import time
 import tomllib
@@ -38,6 +39,26 @@ def asset_path(name: str) -> str:
     if hasattr(sys, "_MEIPASS"):
         return os.path.join(sys._MEIPASS, "lem_assets", name)
     return os.path.join(os.path.dirname(__file__), "assets", name)
+
+
+def _open_in_file_manager(folder: Path) -> bool:
+    """Open a directory in the OS file manager, returning False on failure.
+
+    Preferred over QDesktopServices.openUrl(file://…): on some Linux desktops
+    (e.g. a Raspberry Pi) that hands the file: URL to the default browser, which
+    then 404s on a relative path — the 'Open results folder' button showed
+    'File /results — ERR_FILE_NOT_FOUND' rather than opening the folder.
+    """
+    try:
+        if sys.platform == "darwin":
+            subprocess.Popen(["open", str(folder)])
+        elif sys.platform.startswith("win"):
+            os.startfile(str(folder))  # type: ignore[attr-defined]  # noqa: SLF001
+        else:
+            subprocess.Popen(["xdg-open", str(folder)])
+        return True
+    except Exception:
+        return False
 
 
 def default_config_path() -> Path:
@@ -557,9 +578,11 @@ class MainWindow(QMainWindow):
         self.status_label.setText(f"REM sync failed: {message}")
 
     def open_results(self):
-        folder = self.results_dir()
+        folder = self.results_dir().resolve()
         folder.mkdir(parents=True, exist_ok=True)
-        QDesktopServices.openUrl(QUrl.fromLocalFile(str(folder)))
+        if not _open_in_file_manager(folder):
+            # Last resort — may open a browser on some Linux desktops.
+            QDesktopServices.openUrl(QUrl.fromLocalFile(str(folder)))
 
     def closeEvent(self, event):
         if self.worker and self.worker.isRunning():

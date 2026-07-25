@@ -1,7 +1,9 @@
+import asyncio
 import textwrap
 
 import pytest
 
+from lem import scan
 from lem.scan import (
     plug_section,
     remove_plug_sections,
@@ -9,6 +11,44 @@ from lem.scan import (
     sanitize_alias,
     unique_alias,
 )
+
+
+class _FakeWriter:
+    def close(self):
+        pass
+
+    async def wait_closed(self):
+        pass
+
+
+def test_port_open_retries_on_timeout(monkeypatch):
+    # A single dropped SYN (timeout) should not lose the device — retry finds it.
+    calls = {"n": 0}
+
+    async def fake_open(ip, port):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise asyncio.TimeoutError
+        return (object(), _FakeWriter())
+
+    monkeypatch.setattr(scan.asyncio, "open_connection", fake_open)
+    ok = asyncio.run(scan._port_open("1.2.3.4", asyncio.Semaphore(1)))
+    assert ok is True
+    assert calls["n"] == 2  # first attempt timed out, second succeeded
+
+
+def test_port_open_no_retry_on_refused(monkeypatch):
+    # Port closed (host up) is a definitive negative — don't waste retries.
+    calls = {"n": 0}
+
+    async def fake_open(ip, port):
+        calls["n"] += 1
+        raise ConnectionRefusedError
+
+    monkeypatch.setattr(scan.asyncio, "open_connection", fake_open)
+    ok = asyncio.run(scan._port_open("1.2.3.4", asyncio.Semaphore(1)))
+    assert ok is False
+    assert calls["n"] == 1  # refused → no retry
 
 
 def test_resolve_network_bare_address_means_slash24():

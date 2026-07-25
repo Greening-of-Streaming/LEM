@@ -27,9 +27,11 @@ from rich.table import Table
 from lem.config import DEFAULT_PATHS, ConfigError, load_config
 
 PORT = 80
-PORT_TIMEOUT = 0.75
+PORT_TIMEOUT = 1.5
+PORT_RETRIES = 2
 PORT_CONCURRENCY = 128
 IDENTIFY_TIMEOUT = 6
+IDENTIFY_RETRIES = 2
 IDENTIFY_CONCURRENCY = 8
 ENERGY_MODELS = ("P110", "P115")
 
@@ -72,19 +74,27 @@ def resolve_network(subnet_arg: str | None) -> ipaddress.IPv4Network:
 
 
 async def _port_open(ip: str, sem: asyncio.Semaphore) -> bool:
+    """True if TCP :80 accepts a connection. Retries on timeout: over Wi-Fi or
+    on a slow Pi NIC a single SYN is easily dropped, and a missed probe here
+    means the device is never even identified — the cause of Tapo plugs being
+    intermittently absent from a scan (a re-scan would then find them)."""
     async with sem:
-        try:
-            _, writer = await asyncio.wait_for(
-                asyncio.open_connection(ip, PORT), timeout=PORT_TIMEOUT
-            )
-        except Exception:
-            return False
-        writer.close()
-        try:
-            await writer.wait_closed()
-        except Exception:
-            pass
-        return True
+        for _ in range(PORT_RETRIES):
+            try:
+                _, writer = await asyncio.wait_for(
+                    asyncio.open_connection(ip, PORT), timeout=PORT_TIMEOUT
+                )
+            except ConnectionRefusedError:
+                return False  # host up, nothing on :80 — retrying won't help
+            except Exception:
+                continue      # timeout / transient drop — try again
+            writer.close()
+            try:
+                await writer.wait_closed()
+            except Exception:
+                pass
+            return True
+        return False
 
 
 def _decode_tapo_nickname(raw: str) -> str:
@@ -174,11 +184,17 @@ async def scan_network(
 
         async def ident(ip):
             async with sem:
-                # Shelly first — cheap, unauthenticated. Tapo only if creds given.
+                # Shelly first — cheap, unauthenticated and reliable. Tapo only
+                # if creds given, and retried: the KLAP handshake occasionally
+                # flakes, which also dropped plugs from a scan.
                 d = await _identify_shelly(ip)
-                if d is None and username and password:
+                if d is not None or not (username and password):
+                    return d
+                for _ in range(IDENTIFY_RETRIES):
                     d = await _identify_tapo(ip, username, password)
-                return d
+                    if d is not None:
+                        return d
+                return None
 
         results = await asyncio.gather(*(ident(ip) for ip in candidates))
     return [r for r in results if r]
