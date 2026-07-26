@@ -272,14 +272,34 @@ class MainWindow(QMainWindow):
         self.status_label.setText(f"Removed {len(aliases)} plug(s): {listing}")
 
     def explain_naming(self, item):
-        QMessageBox.information(
-            self, "Plug names",
-            "A plug's name comes from the device itself — the Tapo nickname (in "
-            "the Tapo app) or the Shelly name (in the Shelly app/web UI). It's "
-            "the identity REM uses, and LEM can't change it.\n\n"
-            "To rename a plug, change its name on the device, then re-scan here "
-            "to pick up the new name.",
+        if self.worker is not None or self.config is None:
+            return
+        alias = item.data(Qt.UserRole)
+        plug = self.config.plugs.get(alias)
+        if plug is None:
+            return
+        current = plug.tapo_name or plug.device_name or alias
+        if plug.type == "tapo":
+            QMessageBox.information(
+                self, "Tapo plug name",
+                f"'{current}' is this Tapo plug's cloud nickname — the identity "
+                "REM matches on, so LEM keeps it as-is. To change it, rename the "
+                "plug in the Tapo app, then re-scan here.",
+            )
+            return
+        new_name, ok = QInputDialog.getText(
+            self, "Rename plug",
+            "New name (this is the name REM will see):", text=current,
         )
+        new_name = new_name.strip()
+        if not ok or not new_name or new_name == current:
+            return
+        try:
+            scan_mod.rename_plug(self.config_path, alias, new_name)
+        except Exception as e:
+            QMessageBox.warning(self, "Rename failed", str(e))
+            return
+        self.reload_config()
 
     # ------------------------------------------------------------- measurement
 

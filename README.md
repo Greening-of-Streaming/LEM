@@ -41,6 +41,7 @@ Requires Python ≥ 3.11.
 lem --scan                                # discover Tapo + Shelly plugs on the local /24 (Shelly needs no credentials)
 lem --scan 10.0.0.0/24                    # ...or an explicit subnet
 lem --list                                # show configured plugs
+lem --rename shellyplug-abc "Living-room TV"   # give a plug a friendly name
 lem --plugs desk,rack --duration 10m      # measure two plugs for 10 minutes
 lem --all                                 # every configured plug
 lem --plugs desk --interval 0.5 --duration unlimited   # until Ctrl-C
@@ -57,6 +58,18 @@ scan succeeds). Each device found is offered interactively: accept or refuse,
 and name it (the plug's Tapo nickname is the suggested alias). With existing
 plugs configured you choose add-vs-replace up front; everything else in the
 config file is preserved.
+
+**Renaming a plug.** Shelly plugs are discovered under their factory id (e.g.
+`shellyplugpmg3-9070…`) because Shelly stores your app nickname in the cloud, not
+on the device. Rename them right in LEM — no config editing, no device access:
+
+```sh
+lem --rename shellyplugpmg3-9070695b7c78 "Living-room TV"
+```
+
+In the desktop app, **double-click the plug** and type a name. For a Shelly the
+name you give is the identity REM sees. (Tapo plugs keep their Tapo-app nickname,
+since REM matches on it — rename those in the Tapo app and re-scan.)
 
 Each run writes to `results/` (override with `--results-dir` / `--run-name`):
 

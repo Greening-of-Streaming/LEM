@@ -21,7 +21,9 @@ from pathlib import Path
 
 from rich.console import Console
 
-from lem.config import Config, ConfigError, PlugConfig, load_config, upload_alias
+from lem.config import (
+    Config, ConfigError, DEFAULT_PATHS, PlugConfig, load_config, upload_alias,
+)
 from lem.display import make_display, print_summary
 from lem.model import PlugState
 from lem.runner import run
@@ -73,6 +75,10 @@ def build_parser() -> argparse.ArgumentParser:
         help="scan the LAN for Tapo plugs and interactively add them to the config "
              "(default: local /24; e.g. --scan 10.0.0.0/24)",
     )
+    group.add_argument(
+        "--rename", nargs=2, metavar=("ALIAS", "NEW_NAME"),
+        help="rename a configured plug's LEM/REM name (edits the config, not the device)",
+    )
     parser.add_argument("--duration", help="e.g. 90s, 10m, 2h, or 'unlimited' (default from config)")
     parser.add_argument("--interval", type=float, help="seconds between samples (default from config)")
     parser.add_argument("--config", type=Path, help="path to config.toml")
@@ -107,6 +113,22 @@ def main(argv: list[str] | None = None) -> int:
         except KeyboardInterrupt:
             console.print("\nScan aborted — no changes made.")
             return 130
+
+    if args.rename:
+        from lem.scan import rename_plug
+        path = args.config or next((p for p in DEFAULT_PATHS if p.exists()), None)
+        if path is None:
+            console.print("[red]Error:[/red] no config file found — run 'lem --scan' first.")
+            return 1
+        try:
+            new_alias, dtype = rename_plug(path, args.rename[0], args.rename[1])
+        except (ConfigError, OSError) as e:
+            console.print(f"[red]Error:[/red] {e}")
+            return 1
+        extra = "" if dtype != "tapo" else \
+            "  (Tapo REM identity is the cloud nickname and is unchanged)"
+        console.print(f"Renamed → [bold]{new_alias}[/bold].{extra}")
+        return 0
 
     try:
         config = load_config(args.config)

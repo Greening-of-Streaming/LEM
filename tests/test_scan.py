@@ -51,6 +51,44 @@ def test_port_open_no_retry_on_refused(monkeypatch):
     assert calls["n"] == 1  # refused → no retry
 
 
+def test_rename_plug_shelly_sets_device_name(tmp_path):
+    import tomllib
+    cfg = tmp_path / "config.toml"
+    cfg.write_text(
+        '[plugs.shellyplugpmg3-abc]\n'
+        'type = "shelly"\n'
+        'ip   = "192.168.1.17"\n'
+        'device_name = "shellyplugpmg3-abc"\n'
+    )
+    new_alias, dtype = scan.rename_plug(cfg, "shellyplugpmg3-abc", "Ben GoogleTV")
+    assert (new_alias, dtype) == ("ben-googletv", "shelly")
+    raw = tomllib.loads(cfg.read_text())
+    assert "shellyplugpmg3-abc" not in raw["plugs"]
+    p = raw["plugs"]["ben-googletv"]
+    assert p["device_name"] == "Ben GoogleTV"   # the identity REM sees
+    assert p["ip"] == "192.168.1.17" and p["type"] == "shelly"
+
+
+def test_rename_plug_tapo_keeps_cloud_identity(tmp_path):
+    import tomllib
+    cfg = tmp_path / "config.toml"
+    cfg.write_text(
+        '[plugs.lab-a]\ntype = "tapo"\nip   = "192.168.1.146"\ntapo_name = "Lab-A"\n'
+    )
+    new_alias, dtype = scan.rename_plug(cfg, "lab-a", "Kitchen TV")
+    assert dtype == "tapo"
+    p = tomllib.loads(cfg.read_text())["plugs"][new_alias]
+    assert p["tapo_name"] == "Lab-A"      # REM identity untouched
+    assert "device_name" not in p
+
+
+def test_rename_plug_unknown_raises(tmp_path):
+    cfg = tmp_path / "config.toml"
+    cfg.write_text('[plugs.x]\ntype = "fake"\n')
+    with pytest.raises(Exception):
+        scan.rename_plug(cfg, "nope", "y")
+
+
 def test_resolve_network_bare_address_means_slash24():
     assert str(resolve_network("192.168.1.0")) == "192.168.1.0/24"
     assert str(resolve_network("192.168.1.37")) == "192.168.1.0/24"

@@ -240,6 +240,47 @@ def rename_plug_section(text: str, old: str, new: str) -> str:
     )
 
 
+def _set_plug_field(text: str, alias: str, key: str, value: str) -> str:
+    """Within [plugs.<alias>], set `key = <value>`, replacing an existing line
+    or inserting one right after the section header. Other lines are untouched."""
+    hdr = re.compile(rf"^(\s*)\[plugs\.{re.escape(alias)}\]\s*$")
+    keyline = re.compile(rf"^\s*{re.escape(key)}\s*=")
+    out, in_sec = [], False
+    for line in text.splitlines(keepends=True):
+        m = hdr.match(line)
+        if m:
+            in_sec = True
+            out.append(line)
+            out.append(f"{key} = {json.dumps(value)}\n")
+            continue
+        if in_sec and keyline.match(line):
+            continue  # drop the stale key; the fresh one was inserted at the top
+        if in_sec and re.match(r"\s*\[", line):
+            in_sec = False
+        out.append(line)
+    return "".join(out)
+
+
+def rename_plug(config_path: Path, old_alias: str, new_name: str) -> tuple[str, str]:
+    """Rename a configured plug to `new_name` — editing only the config file,
+    never the physical device. For Shelly/other devices the new name becomes the
+    device_name (the identity REM sees). For Tapo the REM identity is the cloud
+    nickname (tapo_name) and is left untouched — only the local alias changes.
+    Returns (new_alias, dtype). Raises ConfigError if the plug isn't found."""
+    with open(config_path, "rb") as f:
+        raw = tomllib.load(f)
+    plugs = raw.get("plugs", {})
+    if old_alias not in plugs:
+        raise ConfigError(f"no plug '{old_alias}' in {config_path}")
+    dtype = plugs[old_alias].get("type", "tapo")
+    new_alias = unique_alias(sanitize_alias(new_name), set(plugs) - {old_alias})
+    text = rename_plug_section(config_path.read_text(), old_alias, new_alias)
+    if dtype != "tapo":
+        text = _set_plug_field(text, new_alias, "device_name", new_name)
+    config_path.write_text(text)
+    return new_alias, dtype
+
+
 def plug_section(alias: str, ip: str, name: str | None = None, dtype: str = "tapo") -> str:
     section = f'\n[plugs.{alias}]\ntype = "{dtype}"\nip   = "{ip}"\n'
     if name:
