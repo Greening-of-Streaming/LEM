@@ -178,3 +178,11 @@ QT_QPA_PLATFORM=offscreen python scripts/gui_smoke.py   # GUI end-to-end
 
 The `fake` device type generates ~40 W synthetic data; give it `fail_rate = 0.5`
 in config to exercise the retry/reconnect path.
+
+### Shelly poll-rate benchmark
+
+`scripts/shelly_poll_benchmark.py <ip>` sweeps polling rates against a Shelly's
+local API and reports its transport limit and how often its sensor actually
+updates (read-only; ramps up and backs off on errors). Measured on a Plug (PM)
+G3: the API sustains ~18–20 Hz but the meter only refreshes **~1 Hz**, so
+polling faster than ~1 Hz just returns duplicates — ~1–2 s is the sweet spot.
