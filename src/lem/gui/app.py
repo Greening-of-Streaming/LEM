@@ -319,6 +319,20 @@ class MainWindow(QMainWindow):
         interval = self.interval_spin.value()
 
         plugs = [self.config.plugs[a] for a in aliases]
+
+        # Shelly meters refresh ~1 Hz; the runner floors their interval. Let the
+        # user know rather than silently logging duplicate readings.
+        from lem.devices import min_interval_for
+        floored = sorted({p.type for p in plugs if interval < min_interval_for(p.type)})
+        if floored:
+            names = ", ".join(f"{d} (≥{min_interval_for(d):g}s)" for d in floored)
+            QMessageBox.information(
+                self, "Poll rate floored",
+                f"Your {interval:g}s interval is faster than some plugs can "
+                f"re-measure, so it's floored for: {names}.\n\nThe meter simply "
+                "doesn't update any quicker.",
+            )
+
         self.states = {p.alias: PlugState(alias=p.alias, ip=p.ip) for p in plugs}
         self.current_sink = CsvSink(self.results_dir())
         run_name = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")

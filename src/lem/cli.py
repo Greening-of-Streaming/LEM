@@ -194,6 +194,18 @@ def main(argv: list[str] | None = None) -> int:
             except RemError as e:
                 console.print(f"[yellow]REM not reachable ({e}); measuring anyway.[/yellow]")
 
+    # Some devices can't re-measure as fast as requested (Shelly meters refresh
+    # ~1 Hz); the runner floors them per-plug, so tell the user rather than
+    # silently logging duplicates.
+    from lem.devices import min_interval_for
+    floored = {p.type for p in plugs if interval < min_interval_for(p.type)}
+    for dtype in sorted(floored):
+        console.print(
+            f"[yellow]note:[/yellow] {dtype} plugs poll no faster than "
+            f"{min_interval_for(dtype):g}s (their meter updates ~that often) — "
+            f"your {interval:g}s interval is floored for them."
+        )
+
     states = {p.alias: PlugState(alias=p.alias, ip=p.ip) for p in plugs}
     sink = CsvSink(results_dir)
 

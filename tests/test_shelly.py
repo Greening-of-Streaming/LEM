@@ -26,3 +26,12 @@ def test_meter_switch_wins_when_both_present():
 
 def test_meter_falls_back_to_switch_when_unknown():
     assert _select_gen2_meter({"sys": {}, "wifi": {}}) == ("Switch.GetStatus?id=0", "apower")
+
+
+def test_shelly_has_1s_poll_floor():
+    from lem.devices import min_interval_for
+    from lem.devices.shelly import ShellyDevice
+    assert ShellyDevice.MIN_INTERVAL_S == 1.0
+    assert min_interval_for("shelly") == 1.0
+    assert min_interval_for("tapo") == 0.0    # no floor for Tapo
+    assert min_interval_for("fake") == 0.0

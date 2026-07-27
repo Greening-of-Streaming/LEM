@@ -10,6 +10,11 @@ from abc import ABC, abstractmethod
 
 class BaseDevice(ABC):
 
+    # Smallest sensible poll interval (seconds); 0 = no floor. The measurement
+    # loop never polls a device faster than this — pointless when the hardware
+    # can't re-measure any quicker.
+    MIN_INTERVAL_S: float = 0.0
+
     @abstractmethod
     async def connect(self, ip: str, **credentials) -> bool:
         """Connect / authenticate. Returns True or raises on failure."""

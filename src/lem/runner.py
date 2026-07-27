@@ -38,6 +38,8 @@ async def poll_plug(
         backoff = CONNECT_BACKOFF_INITIAL
         state.status = "ok"
         failures = 0
+        # Never poll a device faster than it can re-measure (e.g. Shelly ~1 Hz).
+        effective_interval = max(interval, device.MIN_INTERVAL_S)
         loop = asyncio.get_running_loop()
         next_tick = loop.time()
         try:
@@ -61,7 +63,7 @@ async def poll_plug(
                         await sink.write(sample)
                     state.record(sample)
 
-                next_tick += interval
+                next_tick += effective_interval
                 delay = next_tick - loop.time()
                 if delay > 0:
                     await _wait(stop_event, delay)

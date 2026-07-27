@@ -34,3 +34,11 @@ def make_device(device_type: str) -> BaseDevice:
             f"Unknown device type '{device_type}' (known: {', '.join(DEVICE_TYPES)})"
         ) from None
     return factory()
+
+
+def min_interval_for(device_type: str) -> float:
+    """Smallest sensible poll interval for a device type (0.0 = no floor)."""
+    try:
+        return make_device(device_type).MIN_INTERVAL_S
+    except Exception:
+        return 0.0

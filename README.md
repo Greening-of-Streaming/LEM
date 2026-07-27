@@ -186,3 +186,11 @@ local API and reports its transport limit and how often its sensor actually
 updates (read-only; ramps up and backs off on errors). Measured on a Plug (PM)
 G3: the API sustains ~18–20 Hz but the meter only refreshes **~1 Hz**, so
 polling faster than ~1 Hz just returns duplicates — ~1–2 s is the sweet spot.
+LEM therefore **floors the poll interval at 1 s for Shelly plugs** (`ShellyDevice.MIN_INTERVAL_S`).
+
+**Shelly vs Tapo, measured:** the Shelly has **no temporal advantage** over the
+TP-Link Tapo P110 — both usefully refresh about once a second — and a **power-
+resolution disadvantage**: the P110 reports integer **milliwatts** (0.001 W),
+while these Shelly plugs resolve only to ~**0.1 W** and read low single-watt
+loads unreliably. Prefer a Tapo P110 for small/precise loads; the Shelly is a
+fine no-cloud option for larger loads.

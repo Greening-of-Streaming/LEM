@@ -40,6 +40,11 @@ def _select_gen2_meter(status: dict) -> tuple[str, str]:
 
 class ShellyDevice(BaseDevice):
 
+    # A Shelly's power meter only refreshes ~1 Hz (measured — see
+    # scripts/shelly_poll_benchmark.py), so polling faster just returns
+    # duplicate readings. Floor the interval at 1 s.
+    MIN_INTERVAL_S = 1.0
+
     def __init__(self):
         self._ip = None
         self._auth = None    # aiohttp.BasicAuth or None
@@ -81,6 +86,9 @@ class ShellyDevice(BaseDevice):
         except Exception:
             pass
 
+        # Neither worked — don't leak the session (poll_plug retries on failure).
+        await self._session.close()
+        self._session = None
         raise ConnectionError(f"Could not reach Shelly device at {ip}")
 
     async def get_power_mw(self) -> float:
