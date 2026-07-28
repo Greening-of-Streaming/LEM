@@ -57,7 +57,9 @@ config, `TAPO_USERNAME`/`TAPO_PASSWORD`, or an interactive prompt; saved once a
 scan succeeds). Each device found is offered interactively: accept or refuse,
 and name it (the plug's Tapo nickname is the suggested alias). With existing
 plugs configured you choose add-vs-replace up front; everything else in the
-config file is preserved.
+config file is preserved. By default the scan only offers devices that can
+measure power (Tapo P110/P115 and Shelly); hubs, bulbs and basic plugs are
+hidden — pass `--nofilter` (or tick "show all" in the GUI dialog) to include them.
 
 **Renaming a plug.** Shelly plugs are discovered under their factory id (e.g.
 `shellyplugpmg3-9070…`) because Shelly stores your app nickname in the cloud, not

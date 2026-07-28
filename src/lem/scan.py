@@ -36,6 +36,13 @@ IDENTIFY_CONCURRENCY = 8
 ENERGY_MODELS = ("P110", "P115")
 
 
+def is_energy_device(d: dict) -> bool:
+    """True if a scan result can actually measure power. Non-Tapo devices we
+    discover (Shelly) are metering plugs; for Tapo, only the P110/P115 family
+    monitors energy — hubs (H*), bulbs (L*) and basic plugs (P100/P105) don't."""
+    return d["type"] != "tapo" or str(d.get("model", "")).startswith(ENERGY_MODELS)
+
+
 # ---------------------------------------------------------------------------
 # Network scanning
 # ---------------------------------------------------------------------------
@@ -433,7 +440,8 @@ def _ask(prompt: str, default: str = "") -> str:
     return answer or default
 
 
-def run_scan(subnet_arg: str, config_arg: Path | None, console: Console) -> int:
+def run_scan(subnet_arg: str, config_arg: Path | None, console: Console,
+             show_all: bool = False) -> int:
     # Resolve subnet
     try:
         network = resolve_network(subnet_arg)
@@ -482,6 +490,21 @@ def run_scan(subnet_arg: str, config_arg: Path | None, console: Console) -> int:
         note = ensure_credentials_saved(config_path, raw, username, password)
         if note:
             console.print(note)
+
+    # By default only offer devices that can actually measure power; hubs, bulbs
+    # and non-metering plugs are noise. --nofilter (show_all) keeps everything.
+    if not show_all:
+        energy = [d for d in found if is_energy_device(d)]
+        hidden = len(found) - len(energy)
+        if hidden:
+            console.print(f"[dim]Hiding {hidden} non-energy Tapo device(s) "
+                          f"(hubs / bulbs / non-metering plugs). "
+                          f"Rescan with --nofilter to include them.[/dim]")
+        found = energy
+        if not found:
+            console.print("[yellow]No energy-monitoring plugs found.[/yellow] "
+                          "Use --nofilter to add other Tapo devices anyway.")
+            return 1
 
     table = Table(box=None, pad_edge=False)
     table.add_column("IP")

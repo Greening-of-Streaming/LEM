@@ -51,6 +51,16 @@ def test_port_open_no_retry_on_refused(monkeypatch):
     assert calls["n"] == 1  # refused → no retry
 
 
+def test_is_energy_device():
+    energy = lambda t, m: scan.is_energy_device({"type": t, "model": m})
+    assert energy("tapo", "P110") and energy("tapo", "P110M") and energy("tapo", "P115")
+    assert not energy("tapo", "P100")   # basic plug, no meter
+    assert not energy("tapo", "H100")   # hub
+    assert not energy("tapo", "L530")   # bulb
+    assert energy("shelly", "S3PL-30116EU")   # non-Tapo discoveries are meters
+    assert scan.is_energy_device({"type": "shelly"})  # tolerate missing model
+
+
 def test_rename_plug_shelly_sets_device_name(tmp_path):
     import tomllib
     cfg = tmp_path / "config.toml"

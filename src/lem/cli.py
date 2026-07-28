@@ -79,6 +79,10 @@ def build_parser() -> argparse.ArgumentParser:
         "--rename", nargs=2, metavar=("ALIAS", "NEW_NAME"),
         help="rename a configured plug's LEM/REM name (edits the config, not the device)",
     )
+    parser.add_argument(
+        "--nofilter", action="store_true",
+        help="with --scan: also offer non-energy devices (hubs, bulbs, basic plugs)",
+    )
     parser.add_argument("--duration", help="e.g. 90s, 10m, 2h, or 'unlimited' (default from config)")
     parser.add_argument("--interval", type=float, help="seconds between samples (default from config)")
     parser.add_argument("--config", type=Path, help="path to config.toml")
@@ -109,7 +113,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.scan:
         from lem.scan import run_scan
         try:
-            return run_scan(args.scan, args.config, console)
+            return run_scan(args.scan, args.config, console, show_all=args.nofilter)
         except KeyboardInterrupt:
             console.print("\nScan aborted — no changes made.")
             return 130

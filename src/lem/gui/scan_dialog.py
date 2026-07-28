@@ -7,10 +7,11 @@ handle; accepting them refreshes their name in place (upsert)."""
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
-    QDialog, QDialogButtonBox, QLabel, QTableWidget, QTableWidgetItem, QVBoxLayout,
+    QCheckBox, QDialog, QDialogButtonBox, QLabel, QTableWidget, QTableWidgetItem,
+    QVBoxLayout,
 )
 
-from lem.scan import ENERGY_MODELS, sanitize_alias, unique_alias
+from lem.scan import ENERGY_MODELS, is_energy_device, sanitize_alias, unique_alias
 
 
 class ScanResultsDialog(QDialog):
@@ -37,12 +38,17 @@ class ScanResultsDialog(QDialog):
         shown = {ip_to_alias[d["ip"]] for d in found if d["ip"] in ip_to_alias}
         taken = set(existing_aliases) - shown
         self._aliases = []
+        self._nonenergy_rows = []  # hidden by default; revealed via the checkbox
         for row, d in enumerate(found):
             known = ip_to_alias.get(d["ip"])
+            energy = is_energy_device(d)
+            if not energy:
+                self._nonenergy_rows.append(row)
 
             check = QTableWidgetItem()
             check.setFlags(Qt.ItemIsUserCheckable | Qt.ItemIsEnabled)
-            check.setCheckState(Qt.Checked)
+            # Only auto-tick devices that can actually measure power.
+            check.setCheckState(Qt.Checked if energy else Qt.Unchecked)
             self.table.setItem(row, 0, check)
 
             name = d["nickname"] or "—"
@@ -70,12 +76,26 @@ class ScanResultsDialog(QDialog):
             handle_item.setFlags(Qt.ItemIsEnabled)  # read-only
             self.table.setItem(row, 4, handle_item)
         self.table.resizeColumnsToContents()
+        for row in self._nonenergy_rows:
+            self.table.setRowHidden(row, True)
         layout.addWidget(self.table)
+
+        if self._nonenergy_rows:
+            self._show_all = QCheckBox(
+                f"Show {len(self._nonenergy_rows)} non-energy device(s) "
+                "(hubs, bulbs, basic plugs)"
+            )
+            self._show_all.toggled.connect(self._toggle_nonenergy)
+            layout.addWidget(self._show_all)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
+
+    def _toggle_nonenergy(self, show: bool):
+        for row in self._nonenergy_rows:
+            self.table.setRowHidden(row, not show)
 
     def selection(self) -> list[tuple]:
         """Ticked rows as [(alias, ip, name, type), ...]."""
