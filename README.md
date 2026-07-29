@@ -123,7 +123,8 @@ results folder" button. CSV output is identical to the CLI's.
 ```
 
 The same `packaging/lem.spec` builds the Windows .exe when run on a Windows
-machine (PyInstaller doesn't cross-compile) — CI workflow to follow. Signing/
+machine (PyInstaller doesn't cross-compile). CI (`.github/workflows/build.yml`)
+builds both on every push to main and publishes them to a GitHub Release. Signing/
 notarization steps are sketched in `packaging/build_macos.sh` and will be
 enabled once the Greening of Streaming Apple Developer account is active.
 

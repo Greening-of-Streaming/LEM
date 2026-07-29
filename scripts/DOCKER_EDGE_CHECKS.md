@@ -2,8 +2,8 @@
 
 In-process API edge cases are covered by `scripts/e2e_edge_cases.py`. These
 remaining ones need the running stack (`docker compose up -d timescaledb admin`
-from the `field-api` branch) and are part of P1 regression. Run them from the
-`rem` repo; `field_test.sh setup` first for a join code.
+in the `rem` repo — the field API is merged into `master`) and are part of P1
+regression. Run them from the `rem` repo; `field_test.sh setup` first for a join code.
 
 1. **Experiment stop → data orphaned**
    - Join LEM, measure ~30s → `./scripts/field_test.sh verify` shows rows.
