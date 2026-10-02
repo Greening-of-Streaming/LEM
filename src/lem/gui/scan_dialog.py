@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
+from lem.gui import fix_item_checkboxes
 from lem.scan import ENERGY_MODELS, is_energy_device, sanitize_alias, unique_alias
 
 
@@ -30,6 +31,7 @@ class ScanResultsDialog(QDialog):
         ))
 
         self.table = QTableWidget(len(found), 5, self)
+        fix_item_checkboxes(self.table)
         self.table.setHorizontalHeaderLabels(["Use", "Name", "Type", "Model", "Saved as"])
         self.table.verticalHeader().setVisible(False)
         # Pre-compute the internal filename-safe handle per row (auto-derived,

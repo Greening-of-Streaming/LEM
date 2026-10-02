@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
 )
 
 from lem import scan as scan_mod
+from lem.gui import fix_item_checkboxes
 from lem.cli import parse_duration
 from lem.config import DEFAULT_PATHS, ConfigError, load_config, upload_alias
 from lem.gui.rem_dialogs import JoinDialog, StatusDialog
@@ -118,6 +119,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(QLabel("Plugs — tick to select, then Start to measure or "
                                 "Remove to delete (names come from the plug):"))
         self.plug_list = QListWidget()
+        fix_item_checkboxes(self.plug_list)
         self.plug_list.setMaximumHeight(160)
         self.plug_list.itemDoubleClicked.connect(self.explain_naming)
         layout.addWidget(self.plug_list)
