@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
 )
 
 from lem import scan as scan_mod
+from lem import version_string
 from lem.gui import fix_item_checkboxes
 from lem.cli import parse_duration
 from lem.config import DEFAULT_PATHS, ConfigError, load_config, upload_alias
@@ -93,7 +94,7 @@ class MainWindow(QMainWindow):
         self._join_worker = None
         self._sync_worker = None
 
-        self.setWindowTitle("LEM — Local Energy Measurement")
+        self.setWindowTitle(f"LEM {version_string()} — Local Energy Measurement")
         self.resize(680, 640)
 
         logo = QPixmap(asset_path("gos-logo.png"))

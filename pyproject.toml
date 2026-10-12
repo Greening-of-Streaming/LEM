@@ -1,6 +1,6 @@
 [project]
 name = "lem"
-version = "0.2.0"
+dynamic = ["version"]
 description = "LEM (Local Energy Measurement) — multi-plug LAN power measurement, companion to REM"
 requires-python = ">=3.11"
 dependencies = [
@@ -22,6 +22,9 @@ lem-gui = "lem.gui.app:main"
 [build-system]
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools.dynamic]
+version = { attr = "lem.__version__" }
 
 [tool.setuptools.packages.find]
 where = ["src"]

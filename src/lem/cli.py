@@ -21,6 +21,7 @@ from pathlib import Path
 
 from rich.console import Console
 
+from lem import version_string
 from lem.config import (
     Config, ConfigError, DEFAULT_PATHS, PlugConfig, load_config, upload_alias,
 )
@@ -66,6 +67,7 @@ def build_parser() -> argparse.ArgumentParser:
                "(run 'lem rem -h' for details)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
+    parser.add_argument("--version", action="version", version=f"lem {version_string()}")
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--plugs", help="comma-separated plug aliases from the config")
     group.add_argument("--all", action="store_true", help="measure every configured plug")
